@@ -1,38 +1,38 @@
 # rapid_figures
 
-RAPID 断面（26.5°N）CMIP6 诊断与出图流程，可在 [LEAP JupyterHub](https://leap.2i2c.cloud/) 或本地独立运行。
+CMIP6 diagnostics and figure-generation workflow for the RAPID section at 26.5°N. The pipeline can be run independently on [LEAP JupyterHub](https://leap.2i2c.cloud/) or in a local environment.
 
-由 `Timeseri_RAPID_figure.ipynb`、`Test_budget.ipynb`、`ROCCA_figure1-Copy1.ipynb` 重构为两个主程序：
+This repository was refactored from `Timeseri_RAPID_figure.ipynb`, `Test_budget.ipynb`, and `ROCCA_figure1-Copy1.ipynb` into two main programs:
 
-| 文件 | 作用 |
-|------|------|
-| **`compute.py`** | 只计算，输出到 `outputs/data/` |
-| **`plot.py`** | 只绘图，读取 `outputs/data/`，输出到 `outputs/figures/` |
+| File             | Purpose                                                                     |
+| ---------------- | --------------------------------------------------------------------------- |
+| **`compute.py`** | Performs all computations and writes results to `outputs/data/`             |
+| **`plot.py`**    | Generates figures from `outputs/data/` and saves them to `outputs/figures/` |
 
-`common/` 为内部工具库。来源对照见 [`docs/SOURCES.md`](docs/SOURCES.md)。
+The `common/` directory contains internal utility modules. See `docs/SOURCES.md` for the mapping between the original notebooks and the refactored code.
 
 ---
 
-## 目录结构
+## Directory Structure
 
-```
+```text
 rapid_figures/
-├── compute.py          # 计算主程序（8 步）
-├── plot.py             # 绘图主程序（15 类图）
+├── compute.py          # Main computation program (8 steps)
+├── plot.py             # Main plotting program (15 figure categories)
 ├── requirements.txt
-├── pack_for_cluster.sh # 打包上传 LEAP / 集群
-├── common/             # 数据加载、诊断、预算、ROCCA 等
-├── cluster/            # LEAP / Slurm 运行脚本
+├── pack_for_cluster.sh # Package the repository for LEAP / cluster deployment
+├── common/             # Data loading, diagnostics, budget analysis, ROCCA utilities, etc.
+├── cluster/            # LEAP / Slurm execution scripts
 ├── docs/
-│   └── SOURCES.md      # notebook 来源说明
-└── outputs/            # 运行产物（git 忽略）
+│   └── SOURCES.md      # Documentation of notebook sources
+└── outputs/            # Runtime outputs (ignored by git)
     ├── data/
     └── figures/
 ```
 
 ---
 
-## 快速开始
+## Quick Start
 
 ```bash
 git clone <your-repo-url>
@@ -40,118 +40,178 @@ cd rapid_figures
 
 pip install -r requirements.txt
 
-# 1. 计算（需要 GCS 访问权限）
+# 1. Run computations (requires GCS access)
 python compute.py
 
-# 2. 绘图（可反复运行，无需重算）
+# 2. Generate figures
+# This step can be rerun without repeating the computations
 python plot.py
 ```
 
 ---
 
-## 环境变量
+## Environment Variables
 
-| 变量 | 默认值 | 说明 |
-|------|--------|------|
-| `RAPID_GCS_BASE` | `gs://leap-persistent/cbian-prog` | CMIP6 zarr 根路径 |
-| `RAPID_MASK_AREA_PATH` | `/home/jovyan/RAPID_mask_area.nc` | RAPID mask/area |
-| `RAPID_OBS_CANTH_MAT` | `/home/jovyan/RAPID_Canth_20042014.mat` | ROCCA 观测（图 14–15） |
-| `RAPID_FIG_OUTPUT` | `./outputs` | 输出根目录 |
-| `RAPID_PROFILE_START/END` | `2004` / `2014` | 剖面/断面平均时段 |
-| `RAPID_SSP_START` | `2015` | Test_budget 的 SSP 起始年 |
+| Variable                  | Default                                 | Description                                         |
+| ------------------------- | --------------------------------------- | --------------------------------------------------- |
+| `RAPID_GCS_BASE`          | `gs://leap-persistent/cbian-prog`       | Root path of the CMIP6 zarr datasets                |
+| `RAPID_MASK_AREA_PATH`    | `/home/jovyan/RAPID_mask_area.nc`       | RAPID mask and grid-cell area file                  |
+| `RAPID_OBS_CANTH_MAT`     | `/home/jovyan/RAPID_Canth_20042014.mat` | ROCCA observational dataset used for Figures 14–15  |
+| `RAPID_FIG_OUTPUT`        | `./outputs`                             | Root output directory                               |
+| `RAPID_PROFILE_START/END` | `2004` / `2014`                         | Averaging period for profiles and sections          |
+| `RAPID_SSP_START`         | `2015`                                  | Starting year for the SSP analysis in `Test_budget` |
+
+Example:
 
 ```bash
 export RAPID_GCS_BASE="gs://leap-persistent/cbian-prog"
 export RAPID_MASK_AREA_PATH="/home/jovyan/RAPID_mask_area.nc"
 export RAPID_OBS_CANTH_MAT="/home/jovyan/RAPID_Canth_20042014.mat"
-export RAPID_FIG_OUTPUT="/home/jovyan/rapid_outputs"   # 可选
+export RAPID_FIG_OUTPUT="/home/jovyan/rapid_outputs"   # optional
 ```
 
 ---
 
-## compute.py（8 步）
+## `compute.py` Workflow
 
-| 步骤 | 内容 |
-|------|------|
-| 1 | 加载并 mask GCS 数据（historical + ssp126/245/585） |
-| 2 | 体积 / AMOC / Canth 输送 |
-| 3 | Canth 分解（overturning + horizontal） |
-| 4 | 垂直剖面 + 经向断面（2004–2014） |
-| 5 | Time of Emergence (ToE) |
-| 6 | 线性趋势 CSV |
-| 7 | Test_budget：贡献项 / 区域 / 子区域分解 |
-| 8 | ROCCA：CMIP6 vs RAPID 观测（2004–2014） |
+`compute.py` performs the analysis in eight steps:
 
-主要输出目录：`outputs/data/`（NetCDF、JSON、CSV、`meta.json`）。完整清单见下方表格。
+| Step | Description                                                                             |
+| ---- | --------------------------------------------------------------------------------------- |
+| 1    | Load and mask GCS datasets for historical and SSP1-2.6 / SSP2-4.5 / SSP5-8.5            |
+| 2    | Calculate volume transport, AMOC strength, and anthropogenic carbon transport           |
+| 3    | Decompose anthropogenic carbon transport into overturning and horizontal components     |
+| 4    | Calculate vertical profiles and longitude-depth sections averaged over 2004–2014        |
+| 5    | Calculate Time of Emergence (ToE)                                                       |
+| 6    | Calculate linear trends and save them as CSV files                                      |
+| 7    | Run `Test_budget`: contribution, regional, and subregional decompositions               |
+| 8    | Run ROCCA diagnostics comparing CMIP6 simulations with RAPID observations for 2004–2014 |
 
----
+The main outputs are written to `outputs/data/` as NetCDF, JSON, CSV, and `meta.json` files.
 
-## plot.py 输出（`outputs/figures/`）
-
-| 图片 | 说明 |
-|------|------|
-| `01_annual_monthly_decomp.png` | Canth overturning / horizontal，年+月 |
-| `02_vertical_profiles_2004_2014.png` | 三面板垂直剖面 |
-| `03_lon_sections_2004_2014.png` | 三面板经向断面 |
-| `04_canth_transport.png` | Canth 输送时间序列 |
-| `04_amoc_strength.png` | AMOC 强度时间序列 |
-| `04_volume_transport.png` | 体积输送时间序列 |
-| `04_canth_mean_concentration.png` | 断面平均 Canth 浓度 |
-| `08_ToE_canth_transport.png` | Canth 输送 + ToE |
-| `09_ToE_volume_transport.png` | 体积输送 + ToE |
-| `10_ToE_amoc_strength.png` | AMOC + ToE |
-| `11_annual_vs_monthly_volume_{ssp}.png` | 年 vs 月体积输送（ssp585, ssp245） |
-| `12_{ssp}_{yearly\|monthly}_combined.png` | Test_budget 区域 + 贡献项分解 |
-| `13_{ssp}_{yearly\|monthly}_decomposition_WBC_NonWBC_0_700m.png` | WBC / Non-WBC 子区域分解 |
-| `14_rocca_canth_transport_combined.png` | CMIP6 vs RAPID 观测时间序列 |
-| `15_rocca_canth_seasonal_combined.png` | CMIP6 vs 观测季节气候态 |
-
-趋势表在 `plot.py` 运行时打印到终端（不生成图片）。
+A detailed output list is provided below.
 
 ---
 
-## 数据输出（`outputs/data/`）
+## `plot.py` Outputs
 
-| 路径 | 内容 |
-|------|------|
-| `annual_transport/{ssp}.nc` | 年尺度输送 |
-| `monthly_transport/{ssp}.nc` | 月尺度输送 |
-| `annual_decomp/`, `monthly_decomp/` | overturning / horizontal 分解 |
-| `profiles/`, `sections/` | 剖面与断面 |
-| `toe_dict.json` | ToE 结果 |
-| `trends_*.csv` | 线性趋势 |
-| `annual_budget_decomp/`, `monthly_budget_decomp/` | Test_budget 贡献项 |
-| `annual_regional_canth/`, `monthly_regional_canth/` | WBC / Non-WBC 区域输送 |
-| `annual_subregion_decomp/`, `monthly_subregion_decomp/` | 子区域分解 |
-| `rocca/` | ROCCA CMIP6 成员与观测缓存 |
+Figures are written to `outputs/figures/`.
 
-**GCS 输入变量：** `vo`, `dissic`, `dissicnat`（historical + ssp126/245/585，annual & monthly zarr）
+| Figure                                                           | Description                                                                                                |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `01_annual_monthly_decomp.png`                                   | Annual and monthly anthropogenic carbon transport decomposition into overturning and horizontal components |
+| `02_vertical_profiles_2004_2014.png`                             | Three-panel vertical profile figure                                                                        |
+| `03_lon_sections_2004_2014.png`                                  | Three-panel longitude-depth section figure                                                                 |
+| `04_canth_transport.png`                                         | Anthropogenic carbon transport time series                                                                 |
+| `04_amoc_strength.png`                                           | AMOC strength time series                                                                                  |
+| `04_volume_transport.png`                                        | Volume transport time series                                                                               |
+| `04_canth_mean_concentration.png`                                | Section-mean anthropogenic carbon concentration time series                                                |
+| `08_ToE_canth_transport.png`                                     | Anthropogenic carbon transport with Time of Emergence                                                      |
+| `09_ToE_volume_transport.png`                                    | Volume transport with Time of Emergence                                                                    |
+| `10_ToE_amoc_strength.png`                                       | AMOC strength with Time of Emergence                                                                       |
+| `11_annual_vs_monthly_volume_{ssp}.png`                          | Comparison of annual and monthly volume transport for SSP5-8.5 and SSP2-4.5                                |
+| `12_{ssp}_{yearly\|monthly}_combined.png`                        | `Test_budget` regional and contribution-term decomposition                                                 |
+| `13_{ssp}_{yearly\|monthly}_decomposition_WBC_NonWBC_0_700m.png` | WBC / Non-WBC subregional decomposition                                                                    |
+| `14_rocca_canth_transport_combined.png`                          | CMIP6 versus RAPID observational anthropogenic carbon transport time series                                |
+| `15_rocca_canth_seasonal_combined.png`                           | CMIP6 versus observational seasonal climatology of anthropogenic carbon transport                          |
+
+Linear trend tables are printed directly to the terminal when `plot.py` is executed and are not saved as figures.
 
 ---
 
-## LEAP / 集群部署
+## Data Outputs
+
+All processed data are stored under `outputs/data/`.
+
+| Path                                                    | Contents                                                                          |
+| ------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `annual_transport/{ssp}.nc`                             | Annual transport diagnostics                                                      |
+| `monthly_transport/{ssp}.nc`                            | Monthly transport diagnostics                                                     |
+| `annual_decomp/`, `monthly_decomp/`                     | Overturning and horizontal decomposition                                          |
+| `profiles/`, `sections/`                                | Vertical profiles and longitude-depth sections                                    |
+| `toe_dict.json`                                         | Time of Emergence results                                                         |
+| `trends_*.csv`                                          | Linear trend results                                                              |
+| `annual_budget_decomp/`, `monthly_budget_decomp/`       | `Test_budget` contribution-term decomposition                                     |
+| `annual_regional_canth/`, `monthly_regional_canth/`     | WBC / Non-WBC regional anthropogenic carbon transport                             |
+| `annual_subregion_decomp/`, `monthly_subregion_decomp/` | Subregional decomposition                                                         |
+| `rocca/`                                                | Cached CMIP6 ensemble-member and observational data used by the ROCCA diagnostics |
+
+### GCS Input Variables
+
+The workflow uses the following CMIP6 variables:
+
+```text
+vo
+dissic
+dissicnat
+```
+
+The required datasets include historical and SSP1-2.6 / SSP2-4.5 / SSP5-8.5 simulations at both annual and monthly temporal resolution.
+
+---
+
+## LEAP / Cluster Deployment
+
+Package the repository:
 
 ```bash
 bash pack_for_cluster.sh
-# 上传 rapid_figures_*.tar.gz 到 Hub 后：
-tar -xzf rapid_figures_*.tar.gz && cd rapid_figures
-bash cluster/setup.sh
-python compute.py    # 或: bash cluster/run_compute.sh
-python plot.py       # 或: bash cluster/run_plot.sh
 ```
 
-Slurm 示例见 `cluster/slurm_example.sh`。
+Upload `rapid_figures_*.tar.gz` to the Hub or cluster, then extract and enter the repository:
+
+```bash
+tar -xzf rapid_figures_*.tar.gz
+cd rapid_figures
+```
+
+Set up the environment:
+
+```bash
+bash cluster/setup.sh
+```
+
+Run the computations:
+
+```bash
+python compute.py
+```
+
+or:
+
+```bash
+bash cluster/run_compute.sh
+```
+
+Generate the figures:
+
+```bash
+python plot.py
+```
+
+or:
+
+```bash
+bash cluster/run_plot.sh
+```
+
+An example Slurm submission script is available at:
+
+```text
+cluster/slurm_example.sh
+```
 
 ---
 
-## 上传到 GitHub
+## Uploading to GitHub
 
-本目录为**独立 git 仓库**（与 `~/` 下的 git 无关）：
+This directory is designed to function as an **independent git repository** and is separate from any git repository that may exist under `~/`.
+
+For the first push:
 
 ```bash
 cd rapid_figures
 
-# 首次推送
 git init
 git add .
 git commit -m "Initial commit: RAPID figure pipeline"
@@ -160,4 +220,11 @@ git remote add origin https://github.com/<user>/<repo>.git
 git push -u origin main
 ```
 
-`outputs/`、`.mat`、`.nc`、打包的 `.tar.gz` 已在 `.gitignore` 中排除，不会上传运行产物。
+The following runtime and data products are excluded through `.gitignore` and will not be uploaded to GitHub:
+
+```text
+outputs/
+*.mat
+*.nc
+*.tar.gz
+```
