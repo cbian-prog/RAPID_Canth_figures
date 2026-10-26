@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-RAPID 图表 — 求解程序（只计算，不出图）
+RAPID figures: computation program (computes only, draws no figures).
 
-从 GCS 读取 CMIP6 RAPID 断面数据，计算全部诊断量，
-将绘图所需数据保存到 outputs/data/。
+Reads the CMIP6 RAPID-section data from GCS, computes every diagnostic, and
+saves the data the figures need to outputs/data/.
 
-用法:
+Usage:
     python compute.py
     RAPID_FIG_OUTPUT=/path/to/out python compute.py
 """

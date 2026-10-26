@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 打包 rapid_figures 目录，用于上传到集群 / LEAP JupyterHub
+# Package the rapid_figures directory for upload to a cluster or LEAP JupyterHub
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"

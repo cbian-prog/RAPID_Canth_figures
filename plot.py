@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
-RAPID 图表 — 绘图程序（只绘图，不计算）
+RAPID figures: plotting program (draws only, computes nothing).
 
-读取 compute.py 生成的 outputs/data/，输出全部 PNG 到 outputs/figures/。
+Reads outputs/data/ written by compute.py and writes every PNG to
+outputs/figures/.
 
-用法:
+Usage:
     python plot.py
     RAPID_FIG_OUTPUT=/path/to/out python plot.py
 """
