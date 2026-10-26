@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# 集群 / LEAP 环境初始化（在 rapid_figures 目录内运行）
+# Set up the environment on a cluster or LEAP (run from inside rapid_figures)
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-# ---------- 按需修改 ----------
-# LEAP JupyterHub 通常已有 notebook 环境，可注释掉 conda 部分
+# ---------- edit as needed ----------
+# LEAP JupyterHub usually provides a notebook environment already; the conda line can stay commented out
 # conda activate notebook
 
 export RAPID_GCS_BASE="${RAPID_GCS_BASE:-gs://leap-persistent/cbian-prog}"
@@ -20,7 +20,7 @@ echo "RAPID_MASK_AREA_PATH = $RAPID_MASK_AREA_PATH"
 echo "RAPID_OBS_CANTH_MAT   = $RAPID_OBS_CANTH_MAT"
 echo "RAPID_FIG_OUTPUT      = $RAPID_FIG_OUTPUT"
 
-# 若环境缺包再安装（LEAP 上通常不需要）
+# Install dependencies only if the environment lacks them (usually not needed on LEAP)
 if [[ "${INSTALL_DEPS:-0}" == "1" ]]; then
   pip install -r requirements.txt
 fi
