@@ -6,7 +6,7 @@
 #SBATCH --mem=32G
 
 set -euo pipefail
-cd "${SLURM_SUBMIT_DIR:-.}/rapid_figures"
+cd "${SLURM_SUBMIT_DIR:-.}/rapid_figures/analysis"
 
 export RAPID_FIG_OUTPUT="${RAPID_FIG_OUTPUT:-$PWD/outputs}"
 bash cluster/run_compute.sh

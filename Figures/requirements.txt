@@ -1,0 +1,4 @@
+# What the figure scripts import.  Nothing else is needed to redraw them.
+numpy>=1.24
+pandas>=2.0
+matplotlib>=3.7

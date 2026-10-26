@@ -1,230 +1,70 @@
-# rapid_figures
+# RAPID C_anth transport — analysis code, figures and plotted data
 
-CMIP6 diagnostics and figure-generation workflow for the RAPID section at 26.5°N. The pipeline can be run independently on [LEAP JupyterHub](https://leap.2i2c.cloud/) or in a local environment.
+Anthropogenic carbon (C_anth) transport across the RAPID section at 26.5°N in
+CMIP6, historical and SSP1-2.6 / SSP2-4.5 / SSP5-8.5, compared with the
+RAPID-based observational estimate for 2004–2014.
 
-This repository was refactored from `Timeseri_RAPID_figure.ipynb`, `Test_budget.ipynb`, and `ROCCA_figure1-Copy1.ipynb` into two main programs:
+## Layout
 
-| File             | Purpose                                                                     |
-| ---------------- | --------------------------------------------------------------------------- |
-| **`compute.py`** | Performs all computations and writes results to `outputs/data/`             |
-| **`plot.py`**    | Generates figures from `outputs/data/` and saves them to `outputs/figures/` |
-
-The `common/` directory contains internal utility modules. See `docs/SOURCES.md` for the mapping between the original notebooks and the refactored code.
-
----
-
-## Directory Structure
-
-```text
-rapid_figures/
-├── compute.py          # Main computation program (8 steps)
-├── plot.py             # Main plotting program (15 figure categories)
-├── requirements.txt
-├── pack_for_cluster.sh # Package the repository for LEAP / cluster deployment
-├── common/             # Data loading, diagnostics, budget analysis, ROCCA utilities, etc.
-├── cluster/            # LEAP / Slurm execution scripts
-├── docs/
-│   └── SOURCES.md      # Documentation of notebook sources
-└── outputs/            # Runtime outputs (ignored by git)
-    ├── data/
-    └── figures/
+```
+analysis/    the code that computes every diagnostic from CMIP6 output
+Figures/     one folder per figure: plot script, plotted data, figure
 ```
 
----
+```
+Figures/Figure04/
+    plot.py                        numpy, pandas, matplotlib — nothing else
+    data/RAPID_Figure04_data.csv   every curve as plotted
+    RAPID_Figure04.png
+    README.md
+```
 
-## Quick Start
+The pipeline has three steps:
 
 ```bash
-git clone <your-repo-url>
-cd rapid_figures
-
-pip install -r requirements.txt
-
-# 1. Run computations (requires GCS access)
-python compute.py
-
-# 2. Generate figures
-# This step can be rerun without repeating the computations
-python plot.py
+cd analysis
+python compute.py                # CMIP6 on GCS -> outputs/data/  (run on LEAP)
+python export_figure_data.py     # outputs/data/ -> ../Figures/FigureNN/data/
+bash ../Figures/run_all.sh       # redraw every figure
 ```
 
----
-
-## Environment Variables
-
-| Variable                  | Default                                 | Description                                         |
-| ------------------------- | --------------------------------------- | --------------------------------------------------- |
-| `RAPID_GCS_BASE`          | `gs://leap-persistent/cbian-prog`       | Root path of the CMIP6 zarr datasets                |
-| `RAPID_MASK_AREA_PATH`    | `/home/jovyan/RAPID_mask_area.nc`       | RAPID mask and grid-cell area file                  |
-| `RAPID_OBS_CANTH_MAT`     | `/home/jovyan/RAPID_Canth_20042014.mat` | ROCCA observational dataset used for Figures 14–15  |
-| `RAPID_FIG_OUTPUT`        | `./outputs`                             | Root output directory                               |
-| `RAPID_PROFILE_START/END` | `2004` / `2014`                         | Averaging period for profiles and sections          |
-| `RAPID_SSP_START`         | `2015`                                  | Starting year for the SSP analysis in `Test_budget` |
-
-Example:
+Once `data/` is filled, any figure redraws on its own:
 
 ```bash
-export RAPID_GCS_BASE="gs://leap-persistent/cbian-prog"
-export RAPID_MASK_AREA_PATH="/home/jovyan/RAPID_mask_area.nc"
-export RAPID_OBS_CANTH_MAT="/home/jovyan/RAPID_Canth_20042014.mat"
-export RAPID_FIG_OUTPUT="/home/jovyan/rapid_outputs"   # optional
+pip install -r Figures/requirements.txt
+cd Figures/Figure04 && python plot.py
 ```
 
----
+The figure folders share no code, so any one of them can be copied out on its
+own and still redraw its figure. See `analysis/README.md` for the methods and
+the environment variables `compute.py` needs.
 
-## `compute.py` Workflow
+| Folder in `Figures/` | Figure |
+|---|---|
+| `Figure01/` | Overturning and horizontal C_anth transport, annual and monthly |
+| `Figure02/` | Vertical profiles of C_anth transport, volume transport and concentration, 2004–2014 |
+| `Figure03/` | Along-section C_anth transport, volume transport and inventory, 2004–2014 |
+| `Figure04/` | Annual C_anth transport, 1850–2100 |
+| `Figure05/` | Annual AMOC strength, 1850–2100 |
+| `Figure06/` | Annual net volume transport, 1850–2100 |
+| `Figure07/` | Area-weighted mean C_anth concentration, 1850–2100 |
+| `Figure08/` | C_anth transport with its time of emergence |
+| `Figure09/` | Net volume transport with its time of emergence |
+| `Figure10/` | AMOC strength with its time of emergence |
+| `Figure11/` | Volume transport, annual against monthly mean |
+| `Figure12/` | Regional and contribution split of the projected C_anth transport |
+| `Figure13/` | Contribution split within the western boundary current and the interior 0–700 m |
+| `Figure14/` | CMIP6 against observed C_anth transport, 2004–2014 |
+| `Figure15/` | Seasonal cycle, CMIP6 against observations, 2004–2014 |
 
-`compute.py` performs the analysis in eight steps:
+The numbering follows the original notebooks (`analysis/SOURCES.md`).
 
-| Step | Description                                                                             |
-| ---- | --------------------------------------------------------------------------------------- |
-| 1    | Load and mask GCS datasets for historical and SSP1-2.6 / SSP2-4.5 / SSP5-8.5            |
-| 2    | Calculate volume transport, AMOC strength, and anthropogenic carbon transport           |
-| 3    | Decompose anthropogenic carbon transport into overturning and horizontal components     |
-| 4    | Calculate vertical profiles and longitude-depth sections averaged over 2004–2014        |
-| 5    | Calculate Time of Emergence (ToE)                                                       |
-| 6    | Calculate linear trends and save them as CSV files                                      |
-| 7    | Run `Test_budget`: contribution, regional, and subregional decompositions               |
-| 8    | Run ROCCA diagnostics comparing CMIP6 simulations with RAPID observations for 2004–2014 |
+## Reproducibility
 
-The main outputs are written to `outputs/data/` as NetCDF, JSON, CSV, and `meta.json` files.
+The figure scripts reproduce the drawing code of the original single plotting
+program. Drawn from the same data, all 26 images match the original output
+pixel for pixel, except for about 20 antialiased pixels in Figure 9 that come
+from the last digit of the CSV round trip.
 
-A detailed output list is provided below.
-
----
-
-## `plot.py` Outputs
-
-Figures are written to `outputs/figures/`.
-
-| Figure                                                           | Description                                                                                                |
-| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `01_annual_monthly_decomp.png`                                   | Annual and monthly anthropogenic carbon transport decomposition into overturning and horizontal components |
-| `02_vertical_profiles_2004_2014.png`                             | Three-panel vertical profile figure                                                                        |
-| `03_lon_sections_2004_2014.png`                                  | Three-panel longitude-depth section figure                                                                 |
-| `04_canth_transport.png`                                         | Anthropogenic carbon transport time series                                                                 |
-| `04_amoc_strength.png`                                           | AMOC strength time series                                                                                  |
-| `04_volume_transport.png`                                        | Volume transport time series                                                                               |
-| `04_canth_mean_concentration.png`                                | Section-mean anthropogenic carbon concentration time series                                                |
-| `08_ToE_canth_transport.png`                                     | Anthropogenic carbon transport with Time of Emergence                                                      |
-| `09_ToE_volume_transport.png`                                    | Volume transport with Time of Emergence                                                                    |
-| `10_ToE_amoc_strength.png`                                       | AMOC strength with Time of Emergence                                                                       |
-| `11_annual_vs_monthly_volume_{ssp}.png`                          | Comparison of annual and monthly volume transport for SSP5-8.5 and SSP2-4.5                                |
-| `12_{ssp}_{yearly\|monthly}_combined.png`                        | `Test_budget` regional and contribution-term decomposition                                                 |
-| `13_{ssp}_{yearly\|monthly}_decomposition_WBC_NonWBC_0_700m.png` | WBC / Non-WBC subregional decomposition                                                                    |
-| `14_rocca_canth_transport_combined.png`                          | CMIP6 versus RAPID observational anthropogenic carbon transport time series                                |
-| `15_rocca_canth_seasonal_combined.png`                           | CMIP6 versus observational seasonal climatology of anthropogenic carbon transport                          |
-
-Linear trend tables are printed directly to the terminal when `plot.py` is executed and are not saved as figures.
-
----
-
-## Data Outputs
-
-All processed data are stored under `outputs/data/`.
-
-| Path                                                    | Contents                                                                          |
-| ------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| `annual_transport/{ssp}.nc`                             | Annual transport diagnostics                                                      |
-| `monthly_transport/{ssp}.nc`                            | Monthly transport diagnostics                                                     |
-| `annual_decomp/`, `monthly_decomp/`                     | Overturning and horizontal decomposition                                          |
-| `profiles/`, `sections/`                                | Vertical profiles and longitude-depth sections                                    |
-| `toe_dict.json`                                         | Time of Emergence results                                                         |
-| `trends_*.csv`                                          | Linear trend results                                                              |
-| `annual_budget_decomp/`, `monthly_budget_decomp/`       | `Test_budget` contribution-term decomposition                                     |
-| `annual_regional_canth/`, `monthly_regional_canth/`     | WBC / Non-WBC regional anthropogenic carbon transport                             |
-| `annual_subregion_decomp/`, `monthly_subregion_decomp/` | Subregional decomposition                                                         |
-| `rocca/`                                                | Cached CMIP6 ensemble-member and observational data used by the ROCCA diagnostics |
-
-### GCS Input Variables
-
-The workflow uses the following CMIP6 variables:
-
-```text
-vo
-dissic
-dissicnat
-```
-
-The required datasets include historical and SSP1-2.6 / SSP2-4.5 / SSP5-8.5 simulations at both annual and monthly temporal resolution.
-
----
-
-## LEAP / Cluster Deployment
-
-Package the repository:
-
-```bash
-bash pack_for_cluster.sh
-```
-
-Upload `rapid_figures_*.tar.gz` to the Hub or cluster, then extract and enter the repository:
-
-```bash
-tar -xzf rapid_figures_*.tar.gz
-cd rapid_figures
-```
-
-Set up the environment:
-
-```bash
-bash cluster/setup.sh
-```
-
-Run the computations:
-
-```bash
-python compute.py
-```
-
-or:
-
-```bash
-bash cluster/run_compute.sh
-```
-
-Generate the figures:
-
-```bash
-python plot.py
-```
-
-or:
-
-```bash
-bash cluster/run_plot.sh
-```
-
-An example Slurm submission script is available at:
-
-```text
-cluster/slurm_example.sh
-```
-
----
-
-## Uploading to GitHub
-
-This directory is designed to function as an **independent git repository** and is separate from any git repository that may exist under `~/`.
-
-For the first push:
-
-```bash
-cd rapid_figures
-
-git init
-git add .
-git commit -m "Initial commit: RAPID figure pipeline"
-git branch -M main
-git remote add origin https://github.com/<user>/<repo>.git
-git push -u origin main
-```
-
-The following runtime and data products are excluded through `.gitignore` and will not be uploaded to GitHub:
-
-```text
-outputs/
-*.mat
-*.nc
-*.tar.gz
-```
+The data files hold ensemble-level quantities. Members appear only where a
+panel draws them (Figures 14 and 15).

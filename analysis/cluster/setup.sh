@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Set up the environment on a cluster or LEAP (run from inside rapid_figures)
+# Set up the environment on a cluster or LEAP (run from inside rapid_figures/analysis)
 set -euo pipefail
 
 cd "$(dirname "$0")/.."

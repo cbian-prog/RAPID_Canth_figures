@@ -1,6 +1,6 @@
 # Source notebooks
 
-This repository was refactored from the Jupyter notebooks below; their logic now lives in `compute.py`, `plot.py` and `common/`.
+This repository was refactored from the Jupyter notebooks below; their computation now lives in `compute.py` and `common/`, and their plotting in `../Figures/FigureNN/plot.py`.
 
 | Source file | Content | Output figures |
 |-------------|---------|----------------|
