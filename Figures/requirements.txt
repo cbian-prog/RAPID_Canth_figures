@@ -1,4 +1,5 @@
-# What the figure scripts import.  Nothing else is needed to redraw them.
-numpy>=1.24
-pandas>=2.0
-matplotlib>=3.7
+# What the figure scripts import, at the versions they were checked with.
+# Nothing else is needed to redraw them.
+numpy==2.5.2
+pandas==3.0.5
+matplotlib==3.11.1

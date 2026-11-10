@@ -5,7 +5,6 @@ from __future__ import annotations
 import xarray as xr
 
 from .constants import UNI_PGCYR
-from .config import SSP_EXPERIMENTS
 
 
 def calc_transports(ds: xr.Dataset, area_like: xr.DataArray, carbon_unit: float = UNI_PGCYR) -> xr.Dataset:
@@ -63,32 +62,4 @@ def build_transport_dicts(
 ) -> tuple[dict[str, xr.Dataset], dict[str, xr.Dataset]]:
     annual_transport = {exp: calc_transports(ds, area_like) for exp, ds in masked_annual.items()}
     monthly_transport = {exp: calc_transports(ds, area_like) for exp, ds in masked_monthly.items()}
-    return annual_transport, monthly_transport
-
-
-def ensure_transport_dicts(cache_dir) -> tuple[dict[str, xr.Dataset], dict[str, xr.Dataset]]:
-    """Load cached transport dicts or compute and cache them."""
-    from pathlib import Path
-
-    from .data_pipeline import build_masked_concat_dicts
-    from .io import load_dict_of_datasets, save_dict_of_datasets
-
-    cache_dir = Path(cache_dir)
-    annual_dir = cache_dir / "annual_transport"
-    monthly_dir = cache_dir / "monthly_transport"
-    marker = cache_dir / "transport_ready.txt"
-
-    if marker.exists():
-        return (
-            load_dict_of_datasets(annual_dir, SSP_EXPERIMENTS),
-            load_dict_of_datasets(monthly_dir, SSP_EXPERIMENTS),
-        )
-
-    masked_annual, masked_monthly, area_like = build_masked_concat_dicts()
-    annual_transport, monthly_transport = build_transport_dicts(
-        masked_annual, masked_monthly, area_like
-    )
-    save_dict_of_datasets(annual_transport, annual_dir)
-    save_dict_of_datasets(monthly_transport, monthly_dir)
-    marker.write_text("ok\n", encoding="utf-8")
     return annual_transport, monthly_transport

@@ -55,7 +55,7 @@ TREND_VARS = [
 
 def run() -> Path:
     out = data_dir()
-    print(f"=== RAPID compute started ===")
+    print("=== RAPID compute started ===")
     print(f"Output data directory: {out}")
 
     # ------------------------------------------------------------------

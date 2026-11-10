@@ -71,11 +71,17 @@ current (the westernmost ten grid columns), or the interior above about 700 m
 (the top 21 model levels). These index ranges belong to the model grid of the
 section stores.
 
+**Along-section structure** (`compute_three_lon_sections`). Transports are
+summed down each column. The C_anth inventory is concentration times layer
+thickness summed down the column, in mol m⁻². Thickness comes from `lev_bnds`
+when the store carries it and otherwise from the level centres, so a partial
+bottom cell counts at its nominal thickness.
+
 **Observational comparison** (`build_rocca_datasets`). Monthly total,
 overturning and horizontal C_anth transport for 2004–2014 from every CMIP6
 member in `cmip6_NA_Canth_budget_time`, with the CESM2 and CanESM5 members
 also kept separately, against the observational estimate read from the `.mat`
-file.
+file. The model months are placed at mid-month, 1/12 yr apart.
 
 ## From outputs to figures
 

@@ -51,25 +51,3 @@ def data_dir() -> Path:
     out = OUTPUT_ROOT / "data"
     out.mkdir(parents=True, exist_ok=True)
     return out
-
-
-def figures_dir() -> Path:
-    out = OUTPUT_ROOT / "figures"
-    out.mkdir(parents=True, exist_ok=True)
-    return out
-
-
-def figure_dir(name: str) -> Path:
-    return PACKAGE_ROOT / name
-
-
-def figure_output(name: str) -> Path:
-    out = OUTPUT_ROOT / name
-    out.mkdir(parents=True, exist_ok=True)
-    return out
-
-
-def shared_cache_dir() -> Path:
-    out = OUTPUT_ROOT / "_shared"
-    out.mkdir(parents=True, exist_ok=True)
-    return out

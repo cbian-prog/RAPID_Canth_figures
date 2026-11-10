@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+title: >-
+  RAPID C_anth transport: analysis code, figures and plotted data
+message: >-
+  If you use this software or the data it contains, please cite this
+  repository.
+type: software
+authors:
+  - family-names: Bian
+    given-names: Ce
+    email: cebian@ldeo.columbia.edu
+    affiliation: Lamont-Doherty Earth Observatory, Columbia University, New York, USA
+license: MIT
+repository-code: https://github.com/cbian-prog/RAPID_Canth_figures
+abstract: >-
+  Anthropogenic carbon transport across the RAPID section at 26.5°N in CMIP6
+  (historical and SSP1-2.6, SSP2-4.5, SSP5-8.5), compared with the RAPID-based
+  observational estimate for 2004-2014.
+keywords:
+  - anthropogenic carbon
+  - AMOC
+  - RAPID
+  - CMIP6
+  - North Atlantic

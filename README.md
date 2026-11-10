@@ -9,6 +9,7 @@ RAPID-based observational estimate for 2004–2014.
 ```
 analysis/    the code that computes every diagnostic from CMIP6 output
 Figures/     one folder per figure: plot script, plotted data, figure
+tests/       a synthetic stand-in for compute.py's output, used by the check below
 ```
 
 ```
@@ -68,3 +69,15 @@ from the last digit of the CSV round trip.
 
 The data files hold ensemble-level quantities. Members appear only where a
 panel draws them (Figures 14 and 15).
+
+A GitHub Actions check runs at every push. It writes synthetic data in
+compute.py's output layout (`tests/make_synthetic_outputs.py`), exports it and
+draws all 26 images, so a change that breaks the path from compute output to
+figure fails visibly before any real data are involved. Once the exported
+`data/` folders are committed, the same check also redraws the figures from
+them.
+
+## Licence and citation
+
+Code under the MIT Licence; data files and figures under CC BY 4.0. See
+`LICENSE` and `CITATION.cff`.

@@ -26,8 +26,17 @@ ROCCA_N_MONTHS = 132
 
 
 def rocca_time_axis() -> np.ndarray:
-    """Monthly decimal-year axis used in ROCCA_figure1 (2004–2014)."""
-    return np.linspace(ROCCA_YEAR_START, ROCCA_YEAR_END + 1, ROCCA_N_MONTHS)
+    """Monthly decimal-year axis, 2004-2014: the middle of each month.
+
+    Months are 1/12 yr apart.  (The notebook spread 132 points evenly from
+    2004.0 to 2015.0, i.e. 11/131 yr apart, which put the model up to a month
+    behind the observations by 2014.)
+    """
+    n = 12 * (ROCCA_YEAR_END - ROCCA_YEAR_START + 1)
+    if n != ROCCA_N_MONTHS:
+        raise ValueError(f"{ROCCA_YEAR_START}-{ROCCA_YEAR_END} is {n} months, "
+                         f"but the budget files hold {ROCCA_N_MONTHS}")
+    return ROCCA_YEAR_START + (np.arange(n) + 0.5) / 12.0
 
 
 def list_budget_time_files(keyword: str = "RAPID_20042014") -> list[str]:
@@ -133,14 +142,3 @@ def save_rocca_datasets(datasets: dict[str, xr.Dataset], out_dir: Path) -> None:
     rocca_dir.mkdir(parents=True, exist_ok=True)
     for name, ds in datasets.items():
         save_dataset(ds, rocca_dir / f"{name}.nc")
-
-
-def load_rocca_datasets(data_dir: Path) -> dict[str, xr.Dataset]:
-    rocca_dir = data_dir / "rocca"
-    names = ["cmip6_all", "obs", "cesm2", "canesm5"]
-    out: dict[str, xr.Dataset] = {}
-    for name in names:
-        path = rocca_dir / f"{name}.nc"
-        if path.exists():
-            out[name] = xr.open_dataset(path)
-    return out

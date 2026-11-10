@@ -1,0 +1,44 @@
+# Two checks on every push.  The first runs the export step and every figure
+# script on synthetic data with compute.py's output layout, so a change that
+# breaks the export-to-figure path fails here even before the real data exist.
+# The second redraws the figures from the committed data/ folders once they
+# are there.
+name: pipeline check
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  synthetic:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r analysis/requirements.txt
+      - name: Export synthetic compute output and draw every figure
+        run: |
+          python tests/make_synthetic_outputs.py "$RUNNER_TEMP/synth/data"
+          cp -R Figures "$RUNNER_TEMP/figs"
+          python analysis/export_figure_data.py --data-dir "$RUNNER_TEMP/synth/data" \
+                                                --figures-dir "$RUNNER_TEMP/figs"
+          MPLBACKEND=Agg bash "$RUNNER_TEMP/figs/run_all.sh"
+
+  committed-data:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r Figures/requirements.txt
+      - name: Redraw from the committed data
+        run: |
+          if compgen -G "Figures/Figure*/data/*" > /dev/null; then
+            MPLBACKEND=Agg bash Figures/run_all.sh
+          else
+            echo "No exported data committed yet: nothing to redraw."
+          fi

@@ -5,8 +5,8 @@ from __future__ import annotations
 import numpy as np
 import xarray as xr
 
-from .config import EXPERIMENTS, GCS_BASE_PATH, SSP_EXPERIMENTS
-from .io import get_fs, load_mask_and_area, open_rapid_zarr
+from .config import EXPERIMENTS, SSP_EXPERIMENTS
+from .io import load_mask_and_area, open_rapid_zarr
 
 
 def concat_historical_with_ssp_annual(hist_ds: xr.Dataset, ssp_ds: xr.Dataset) -> tuple[xr.Dataset, np.ndarray]:
